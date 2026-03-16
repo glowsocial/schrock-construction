@@ -106,32 +106,62 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- Contact form handling ---
   const form = document.getElementById('contactForm');
   if (form) {
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       
-      const formData = new FormData(form);
-      const data = Object.fromEntries(formData);
-      
-      // Show success state
       const submitBtn = form.querySelector('button[type="submit"]');
       const originalHTML = submitBtn.innerHTML;
       
+      // Show loading state
       submitBtn.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="20 6 9 17 4 12"/>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin">
+          <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
         </svg>
-        Message Sent!
+        Sending...
       `;
-      submitBtn.style.background = '#27ae60';
       submitBtn.disabled = true;
-      
-      // Reset after 3 seconds
-      setTimeout(() => {
-        submitBtn.innerHTML = originalHTML;
-        submitBtn.style.background = '';
-        submitBtn.disabled = false;
-        form.reset();
-      }, 3000);
+
+      try {
+        const formData = new FormData(form);
+        const response = await fetch(form.action, {
+          method: 'POST',
+          body: formData,
+          headers: { 'Accept': 'application/json' }
+        });
+
+        if (response.ok) {
+          submitBtn.innerHTML = `
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Message Sent!
+          `;
+          submitBtn.style.background = '#27ae60';
+          form.reset();
+          
+          setTimeout(() => {
+            submitBtn.innerHTML = originalHTML;
+            submitBtn.style.background = '';
+            submitBtn.disabled = false;
+          }, 4000);
+        } else {
+          throw new Error('Form submission failed');
+        }
+      } catch (error) {
+        submitBtn.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+          </svg>
+          Error — Try Again
+        `;
+        submitBtn.style.background = '#e74c3c';
+        
+        setTimeout(() => {
+          submitBtn.innerHTML = originalHTML;
+          submitBtn.style.background = '';
+          submitBtn.disabled = false;
+        }, 3000);
+      }
     });
   }
 
